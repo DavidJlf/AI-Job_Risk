@@ -20,6 +20,10 @@
       --radius: 18px;
     }
     * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, sans-serif;
@@ -146,6 +150,133 @@
       justify-content: center;
       font-size: 18px;
     }
+
+    .page-wrap {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      min-height: 100vh;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(80px);
+      transition:
+        transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 520ms ease;
+      overflow-y: auto;
+    }
+
+    .page .wrap {
+      min-height: 100vh;
+      padding: 40px 28px 90px;
+    }
+
+    .page.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+      z-index: 2;
+    }
+
+    .page.enter-from-bottom {
+      opacity: 0;
+      transform: translateY(90px);
+      z-index: 3;
+    }
+
+    .page.enter-from-top {
+      opacity: 0;
+      transform: translateY(-90px);
+      z-index: 3;
+    }
+
+    .page.exit-to-top {
+      opacity: 0;
+      transform: translateY(-90px);
+      z-index: 1;
+    }
+
+    .page.exit-to-bottom {
+      opacity: 0;
+      transform: translateY(90px);
+      z-index: 1;
+    }
+
+    .page-nav {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 50;
+      display: flex;
+      gap: 10px;
+    }
+
+    .page-indicator {
+      position: fixed;
+      left: 24px;
+      bottom: 24px;
+      z-index: 50;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(34, 32, 29, 0.82);
+      color: var(--text);
+      padding: 10px 14px;
+      box-shadow: var(--shadow);
+      font-size: .95rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .page-nav button {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    /* 放大标题与第二页图表 */
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2.4rem, 4.6vw, 4.2rem);
+      line-height: 1.05;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      font-size: 1.08rem;
+    }
+
+    #page-2 .chart {
+      height: 520px;
+    }
+
+    #page-2 .grid-2 {
+      margin-top: 40px;
+    }
+    /* 通用，给所有页一个基础 padding */
+    .page .wrap {
+      min-height: 100vh;
+      padding: 60px 28px 90px;  /* 上 60，下 90，这里比之前再大一点 */
+    },
+
+    #page-1 .wrap {
+      padding-top: 140px;       /* 你现在觉得舒适的高度，比如 120~180 */
+    },
+    #page-1 .page-1-inner {
+      margin-top: 120px;   
+    }
+    #page-2 .wrap {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      margin-top: 40px;
+    }
     @media (max-width: 1100px) {
       .controls-grid { grid-template-columns: repeat(3, 1fr); }
       .grid-2 { grid-template-columns: 1fr; }
@@ -156,126 +287,155 @@
       .summary-grid { grid-template-columns: 1fr; }
       .year-row { grid-template-columns: 1fr; }
       .wrap { padding: 16px; }
+      .page-nav {
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+      }
+      .page-nav button {
+        flex: 1;
+      }
+      .page-indicator {
+        left: 16px;
+        bottom: 76px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1>AI & Job Security Dashboard</h1>
-        <p class="subtitle">
-          Explore how salary, AI risk, skills, and job openings shift across countries and years. 
-          Click a country, move the year slider, and compare which jobs look fragile or resilient.
-          <br> All the data comes from 
-          <a href="https://www.kaggle.com/datasets/shree0910/ai-job-risk-and-salary-dataset-20152035" target="_blank">
-            AI Job Impact & Salary Dataset (2015–2035)
-          </a>
-      </p>      </div>
-      <button class="theme-toggle" id="themeBtn">◐</button>
-    </div>
-
-    <section class="panel">
-      <h2>1. Top Controls</h2>
-      <div class="controls-grid">
-        <div class="control">
-          <label for="countrySelect">Country</label>
-          <select id="countrySelect"></select>
-        </div>
-        <div class="control">
-          <label for="jobSelect">Job Title</label>
-          <select id="jobSelect"></select>
-        </div>
-        <div class="control">
-          <label for="expSelect">Experience Level</label>
-          <select id="expSelect"></select>
-        </div>
-        <div class="control">
-          <label for="eduSelect">Education Level</label>
-          <select id="eduSelect"></select>
-        </div>
-        <div class="control">
-          <label for="skillSelect">Primary Skill</label>
-          <select id="skillSelect"></select>
-        </div>
-        <div class="control">
-          <label for="metricSelect">Focus Metric</label>
-          <select id="metricSelect">
-            <option value="airiskscore">AI Risk</option>
-            <option value="salary">Salary</option>
-            <option value="skilldemandscore">Skill Demand</option>
-            <option value="jobopenings">Job Openings</option>
-          </select>
+  <div class="page-wrap">
+    <section class="page active" id="page-1">
+      <div class="wrap">
+        <div class="page-1-inner">
+          <div class="topbar">
+            <div>
+              <h1>AI Job Security Dashboard</h1>
+              <p class="subtitle">
+                Explore how salary, AI risk, skills, and job openings shift across countries and years.
+                Click a country, move the year slider, and compare which jobs look fragile or resilient.
+                <br>
+                All the data comes from
+                <a href="https://www.kaggle.com/datasets/shree0910/ai-job-risk-and-salary-dataset-20152035" target="_blank" rel="noopener noreferrer">
+                  AI Job Impact &amp; Salary Dataset (2015–2035)
+                </a>
+            </p>
+          </div>
+          <button class="theme-toggle" id="themeBtn">◐</button>
         </div>
       </div>
+        <section class="panel">
+          <h2>1. Top Controls</h2>
+          <div class="controls-grid">
+            <div class="control">
+              <label for="countrySelect">Country</label>
+              <select id="countrySelect"></select>
+            </div>
+            <div class="control">
+              <label for="jobSelect">Job Title</label>
+              <select id="jobSelect"></select>
+            </div>
+            <div class="control">
+              <label for="expSelect">Experience Level</label>
+              <select id="expSelect"></select>
+            </div>
+            <div class="control">
+              <label for="eduSelect">Education Level</label>
+              <select id="eduSelect"></select>
+            </div>
+            <div class="control">
+              <label for="skillSelect">Primary Skill</label>
+              <select id="skillSelect"></select>
+            </div>
+            <div class="control">
+              <label for="metricSelect">Focus Metric</label>
+              <select id="metricSelect">
+                <option value="airiskscore">AI Risk</option>
+                <option value="salary">Salary</option>
+                <option value="skilldemandscore">Skill Demand</option>
+                <option value="jobopenings">Job Openings</option>
+              </select>
+            </div>
+          </div>
 
-      <div class="year-row">
-        <label for="yearSlider"><strong>Year</strong></label>
-        <input id="yearSlider" type="range" min="2015" max="2035" step="1" value="2025" />
-        <div id="yearValue" style="font-weight:800;color:var(--accent);font-size:1.3rem;">2025</div>
+          <div class="year-row">
+            <label for="yearSlider"><strong>Year</strong></label>
+            <input id="yearSlider" type="range" min="2015" max="2035" step="1" value="2025" />
+            <div id="yearValue" style="font-weight:800;color:var(--accent);font-size:1.3rem;">2025</div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button id="resetBtn">Reset Filters</button>
+          </div>
+
+          <div class="status" id="statusText">Loading data…</div>
+        </section>
       </div>
-
-      <div style="margin-top:12px;">
-        <button id="resetBtn">Reset Filters</button>
-      </div>
-
-      <div class="status" id="statusText">Loading data…</div>
     </section>
 
-    <div class="grid-2">
-      <section class="panel">
-        <h2>2. World Map</h2>
-        <div id="mapChart" class="chart"></div>
-      </section>
+    <section class="page" id="page-2">
+      <div class="wrap">
+        <div class="grid-2">
+          <section class="panel">
+            <h2>2. World Map</h2>
+            <div id="mapChart" class="chart"></div>
+          </section>
 
-      <section class="panel">
-        <h2>3. Trends Over Time</h2>
-        <div id="trendChart" class="chart"></div>
-      </section>
-    </div>
-
-    <div class="grid-2">
-      <section class="panel">
-        <h2>4. Job-Skill Heatmap</h2>
-        <div id="heatmapChart" class="chart"></div>
-      </section>
-
-      <section class="panel">
-        <h2>5. Top Jobs Snapshot</h2>
-        <div id="barChart" class="chart"></div>
-      </section>
-    </div>
-
-    <section class="panel">
-      <h2>6. Key Summary</h2>
-      <div class="summary-grid">
-        <div class="metric-card">
-          <div class="label">Avg. Salary</div>
-          <div class="value" id="avgSalary">—</div>
-          <div class="sub">Selected filters + year</div>
-        </div>
-        <div class="metric-card">
-          <div class="label">Avg. AI Risk</div>
-          <div class="value" id="avgRisk">—</div>
-          <div class="sub">Selected filters + year</div>
-        </div>
-        <div class="metric-card">
-          <div class="label">Job Openings</div>
-          <div class="value" id="jobOpenings">—</div>
-          <div class="sub">Total openings in selection</div>
-        </div>
-        <div class="metric-card">
-          <div class="label">Distinct Job Titles</div>
-          <div class="value" id="totalJobs">—</div>
-          <div class="sub">Within current selection</div>
+          <section class="panel">
+            <h2>3. Trends Over Time</h2>
+            <div id="trendChart" class="chart"></div>
+          </section>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>7. How to Use</h2>
-      <div class="status">Select a country, adjust the year, and compare how salary, AI risk, and skills shift across roles.</div>
+    <section class="page" id="page-3">
+      <div class="wrap">
+        <div class="grid-2">
+          <section class="panel">
+            <h2>4. Job-Skill Heatmap</h2>
+            <div id="heatmapChart" class="chart"></div>
+          </section>
+
+          <section class="panel">
+            <h2>5. Top Jobs Snapshot</h2>
+            <div id="barChart" class="chart"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h2>6. Key Summary</h2>
+          <div class="summary-grid">
+            <div class="metric-card">
+              <div class="label">Avg. Salary</div>
+              <div class="value" id="avgSalary">—</div>
+              <div class="sub">Selected filters + year</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">Avg. AI Risk</div>
+              <div class="value" id="avgRisk">—</div>
+              <div class="sub">Selected filters + year</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">Job Openings</div>
+              <div class="value" id="jobOpenings">—</div>
+              <div class="sub">Total openings in selection</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">Distinct Job Titles</div>
+              <div class="value" id="totalJobs">—</div>
+              <div class="sub">Within current selection</div>
+            </div>
+          </div>
+        </section>
+      </div>
     </section>
+
+    <div class="page-indicator" id="pageIndicator">Page 1 / 3</div>
+
+    <div class="page-nav">
+      <button id="prevPageBtn">↑ Prev</button>
+      <button id="nextPageBtn">Next ↓</button>
+    </div>
   </div>
 
   <script>
@@ -308,6 +468,50 @@
     };
 
     let rawData = [];
+    const pageEls = Array.from(document.querySelectorAll('.page'));
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    let currentPageIndex = 0;
+    let isPageAnimating = false;
+    let wheelLocked = false;
+
+    function syncPageUi() {
+      if (pageIndicator) pageIndicator.textContent = `Page ${currentPageIndex + 1} / ${pageEls.length}`;
+      if (prevPageBtn) prevPageBtn.disabled = currentPageIndex === 0;
+      if (nextPageBtn) nextPageBtn.disabled = currentPageIndex === pageEls.length - 1;
+    }
+
+    function goToPage(nextIndex) {
+      if (isPageAnimating) return;
+      if (nextIndex < 0 || nextIndex >= pageEls.length) return;
+      if (nextIndex === currentPageIndex) return;
+
+      isPageAnimating = true;
+      const currentPage = pageEls[currentPageIndex];
+      const nextPage = pageEls[nextIndex];
+      const forward = nextIndex > currentPageIndex;
+
+      currentPage.classList.remove('exit-to-top', 'exit-to-bottom');
+      nextPage.classList.remove('enter-from-top', 'enter-from-bottom', 'active');
+      nextPage.classList.add(forward ? 'enter-from-bottom' : 'enter-from-top');
+
+      requestAnimationFrame(() => {
+        currentPage.classList.add(forward ? 'exit-to-top' : 'exit-to-bottom');
+        nextPage.classList.add('active');
+        nextPage.classList.remove(forward ? 'enter-from-bottom' : 'enter-from-top');
+      });
+
+      setTimeout(() => {
+        currentPage.classList.remove('active', 'exit-to-top', 'exit-to-bottom');
+        nextPage.classList.remove('enter-from-top', 'enter-from-bottom');
+        nextPage.scrollTop = 0;
+        currentPageIndex = nextIndex;
+        isPageAnimating = false;
+        syncPageUi();
+        window.dispatchEvent(new Event('resize'));
+      }, 540);
+    }
 
     const fmtCurrency = n => n == null || isNaN(n) ? '—' : new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(n);
     const fmtInt = n => n == null || isNaN(n) ? '—' : new Intl.NumberFormat('en-US').format(Math.round(n));
@@ -715,6 +919,31 @@
       els.year.value = state.year;
       els.yearValue.textContent = state.year;
       initControls();
+      syncPageUi();
+
+      prevPageBtn?.addEventListener('click', () => goToPage(currentPageIndex - 1));
+      nextPageBtn?.addEventListener('click', () => goToPage(currentPageIndex + 1));
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+          e.preventDefault();
+          goToPage(currentPageIndex + 1);
+        }
+        if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          goToPage(currentPageIndex - 1);
+        }
+      });
+
+      document.addEventListener('wheel', (e) => {
+        if (wheelLocked || isPageAnimating) return;
+        if (Math.abs(e.deltaY) < 25) return;
+        wheelLocked = true;
+        if (e.deltaY > 0) goToPage(currentPageIndex + 1);
+        else goToPage(currentPageIndex - 1);
+        setTimeout(() => { wheelLocked = false; }, 700);
+      }, { passive: true });
+
       updateDashboard();
       els.status.textContent = 'Embedded dataset loaded · ' + rawData.length + ' records (' + 2015 + '–' + 2035 + ')';
     }
